@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>客服工单分析 Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  :root { --primary:#409EFF; --danger:#F56C6C; --warn:#E6A23C; --ok:#67C23A; --bg:#f5f7fa; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:#303133; }
+  .wrap { max-width:1200px; margin:0 auto; padding:24px 16px; }
+  h1 { font-size:24px; margin-bottom:6px; }
+  .sub { color:#909399; font-size:13px; margin-bottom:20px; }
+  .kpi { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+  .card { background:#fff; border-radius:10px; padding:18px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .card .num { font-size:30px; font-weight:700; }
+  .card .lbl { color:#909399; font-size:13px; margin-top:4px; }
+  .c-blue{color:var(--primary)} .c-red{color:var(--danger)} .c-orange{color:var(--warn)} .c-green{color:var(--ok)}
+  h2 { font-size:17px; margin:28px 0 12px; padding-left:10px; border-left:4px solid var(--primary); }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .panel { background:#fff; border-radius:10px; padding:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .chart { width:100%; height:320px; }
+  .anomaly .item { background:#fff; border-left:4px solid var(--danger); border-radius:8px; padding:14px 16px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .anomaly .t { font-weight:700; margin-bottom:6px; color:#c0392b; }
+  .anomaly .b { font-size:13px; color:#606266; line-height:1.6; }
+  .anomaly .chips { margin-top:8px; }
+  .chip { display:inline-block; background:#fef0f0; color:#c0392b; border-radius:4px; padding:2px 8px; font-size:12px; margin:2px 4px 0 0; }
+  .filters { margin-bottom:12px; }
+  .filters select { padding:6px 10px; border:1px solid #dcdfe6; border-radius:6px; margin-right:8px; font-size:13px; }
+  table { width:100%; border-collapse:collapse; background:#fff; font-size:13px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  th,td { padding:8px 10px; border-bottom:1px solid #ebeef5; text-align:left; vertical-align:top; }
+  th { background:#f5f7fa; font-weight:600; white-space:nowrap; }
+  tr.anomaly td { background:#fef0f0; }
+  .tag { display:inline-block; padding:1px 7px; border-radius:10px; font-size:12px; }
+  .p-high{background:#fef0f0;color:#c0392b} .p-mid{background:#fdf6ec;color:#b88230} .p-low{background:#f0f9eb;color:#529b2e}
+  .ok{color:var(--ok)} .bad{color:var(--danger)}
+  @media (max-width:800px){ .kpi{grid-template-columns:1fr 1fr;} .grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>客服工单分析 Dashboard</h1>
+  <div class="sub">数据范围:2024-06-01 ~ 2024-06-11 · 共 50 条工单 · 自动异常检测</div>
+
+  <div class="kpi">
+    <div class="card"><div class="num c-blue">50</div><div class="lbl">工单总数</div></div>
+    <div class="card"><div class="num c-red">8</div><div class="lbl">未解决</div></div>
+    <div class="card"><div class="num c-orange">2.36</div><div class="lbl">平均满意度</div></div>
+    <div class="card"><div class="num c-green">19.7h</div><div class="lbl">平均处理时长</div></div>
+  </div>
+
+  <h2>时间趋势</h2>
+  <div class="panel"><div id="chart_trend" class="chart"></div></div>
+
+  <h2>类型 & 优先级分布</h2>
+  <div class="grid">
+    <div class="panel"><div id="chart_category" class="chart"></div></div>
+    <div class="panel"><div id="chart_priority" class="chart"></div></div>
+  </div>
+
+  <h2>处理时长 & 满意度</h2>
+  <div class="grid">
+    <div class="panel"><div id="chart_boxplot" class="chart"></div></div>
+    <div class="panel"><div id="chart_satisfaction" class="chart"></div></div>
+  </div>
+
+  <h2>渠道对比 & 关联分析</h2>
+  <div class="grid">
+    <div class="panel"><div id="chart_channel" class="chart"></div></div>
+    <div class="panel"><div id="chart_scatter" class="chart"></div></div>
+  </div>
+
+  <h2>异常告警</h2>
+  <div class="anomaly"><div class="item"><div class="t">⚠ 核心问题域:&quot;支付问题&quot;占比过高</div><div class="b">支付问题 工单 16 条,占比 32%,超过 25% 阈值,应优先投入资源排查。</div><div class="chips"><span class="chip">T008</span><span class="chip">T012</span><span class="chip">T016</span><span class="chip">T020</span><span class="chip">T022</span><span class="chip">T025</span><span class="chip">T028</span><span class="chip">T030</span><span class="chip">T032</span><span class="chip">T035</span><span class="chip">T037</span><span class="chip">T040</span><span class="chip">T041</span><span class="chip">T046</span><span class="chip">T048</span><span class="chip">…等 16 条</span></div></div><div class="item"><div class="t">⚠ 核心问题域:&quot;退款退货&quot;占比过高</div><div class="b">退款退货 工单 13 条,占比 26%,超过 25% 阈值,应优先投入资源排查。</div><div class="chips"><span class="chip">T001</span><span class="chip">T004</span><span class="chip">T007</span><span class="chip">T011</span><span class="chip">T014</span><span class="chip">T017</span><span class="chip">T021</span><span class="chip">T026</span><span class="chip">T031</span><span class="chip">T036</span><span class="chip">T039</span><span class="chip">T042</span><span class="chip">T047</span></div></div><div class="item"><div class="t">⚠ 存在 5 笔超长处理工单(&gt;48 小时)</div><div class="b">处理时长远超整体平均 20 小时,主要集中在退款退货,提示退款/退货流程存在瓶颈。</div><div class="chips"><span class="chip">T031</span><span class="chip">T007</span><span class="chip">T047</span><span class="chip">T001</span><span class="chip">T042</span></div></div><div class="item"><div class="t">⚠ 未解决工单 8 笔,集中于少数分类</div><div class="b">未解决工单按分类分布: 支付问题 1 笔; 物流查询 2 笔; 退款退货 5 笔; 退款退货类未解决比例最高,存在退款积压风险。</div><div class="chips"><span class="chip">T046</span><span class="chip">T019</span><span class="chip">T033</span><span class="chip">T031</span><span class="chip">T036</span><span class="chip">T039</span><span class="chip">T042</span><span class="chip">T047</span></div></div><div class="item"><div class="t">⚠ 低满意度(≤2 分)工单 27 笔</div><div class="b">低满意度集中于: 投诉 4 笔; 支付问题 9 笔; 物流查询 6 笔; 退款退货 8 笔; 多与超长处理时长、客服/机器人体验相关。</div><div class="chips"><span class="chip">T010</span><span class="chip">T024</span><span class="chip">T034</span><span class="chip">T044</span><span class="chip">T012</span><span class="chip">T020</span><span class="chip">T022</span><span class="chip">T030</span><span class="chip">T032</span><span class="chip">T035</span><span class="chip">T041</span><span class="chip">T046</span><span class="chip">T050</span><span class="chip">T006</span><span class="chip">T013</span><span class="chip">…等 27 条</span></div></div><div class="item"><div class="t">⚠ 反复出现的共性问题(关键词聚类)</div><div class="b">以下问题在描述中反复出现: &quot;退货&quot;(8次); &quot;快递&quot;(5次); &quot;扣款&quot;(5次); &quot;退款&quot;(5次); &quot;付款&quot;(3次); &quot;客服&quot;(3次); &quot;运费&quot;(3次); 其中 T046 明确提到&quot;上个月也有过&quot;,说明重复扣款类问题长期未根治,应作为最高优先级排查。</div><div class="chips"><span class="chip">T001</span><span class="chip">T002</span><span class="chip">T004</span><span class="chip">T007</span><span class="chip">T008</span><span class="chip">T010</span><span class="chip">T011</span><span class="chip">T014</span><span class="chip">T017</span><span class="chip">T021</span><span class="chip">T022</span><span class="chip">T025</span><span class="chip">T026</span><span class="chip">T027</span><span class="chip">T028</span><span class="chip">…等 27 条</span></div></div>  </div>
+
+  <h2>工单明细</h2>
+  <div class="filters">
+    <select id="f-cat" onchange='applyFilter()'><option value="all">全部分类</option><option value="支付问题">支付问题</option><option value="退款退货">退款退货</option><option value="物流查询">物流查询</option><option value="商品咨询">商品咨询</option><option value="投诉">投诉</option><option value="账号问题">账号问题</option></select>
+    <select id="f-pri" onchange='applyFilter()'><option value="all">全部优先级</option><option value="高">高</option><option value="中">中</option><option value="低">低</option></select>
+    <select id="f-chn" onchange='applyFilter()'><option value="all">全部渠道</option><option value="在线">在线</option><option value="电话">电话</option></select>
+    <select id="f-res" onchange='applyFilter()'><option value="all">全部状态</option><option value="1">已解决</option><option value="0">未解决</option></select>
+  </div>
+  <div style="overflow-x:auto">
+  <table id="ticket-table">
+    <thead><tr><th>工单</th><th>时间</th><th>分类</th><th>描述</th><th>优先级</th><th>时长(h)</th><th>满意度</th><th>渠道</th><th>状态</th></tr></thead>
+    <tbody><tr class="anomaly" data-category="退款退货" data-priority="高" data-channel="在线" data-resolved="1"><td>T001</td><td style="white-space:nowrap">2024-06-01 09:15</td><td>退款退货</td><td>退货申请提交一周了还在审核中</td><td><span class="tag p-high">高</span></td><td>72.0</td><td>2</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="物流查询" data-priority="中" data-channel="在线" data-resolved="1"><td>T002</td><td style="white-space:nowrap">2024-06-01 10:30</td><td>物流查询</td><td>快递三天了没有任何物流更新</td><td><span class="tag p-mid">中</span></td><td>4.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="商品咨询" data-priority="低" data-channel="在线" data-resolved="1"><td>T003</td><td style="white-space:nowrap">2024-06-01 14:20</td><td>商品咨询</td><td>想问下这款面霜适不适合敏感肌</td><td><span class="tag p-low">低</span></td><td>1.0</td><td>4</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="退款退货" data-priority="中" data-channel="电话" data-resolved="1"><td>T004</td><td style="white-space:nowrap">2024-06-02 08:45</td><td>退款退货</td><td>收到的衣服和图片差太多了要退款</td><td><span class="tag p-mid">中</span></td><td>24.0</td><td>3</td><td>电话</td><td class="ok">已解决</td></tr><tr data-category="账号问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T005</td><td style="white-space:nowrap">2024-06-02 11:00</td><td>账号问题</td><td>登录后一直提示验证码错误进不去</td><td><span class="tag p-high">高</span></td><td>2.0</td><td>4</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="物流查询" data-priority="高" data-channel="电话" data-resolved="1"><td>T006</td><td style="white-space:nowrap">2024-06-02 15:30</td><td>物流查询</td><td>显示签收但我根本没收到</td><td><span class="tag p-high">高</span></td><td>48.0</td><td>2</td><td>电话</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="退款退货" data-priority="高" data-channel="在线" data-resolved="1"><td>T007</td><td style="white-space:nowrap">2024-06-03 09:00</td><td>退款退货</td><td>退货寄回去三天了钱还没退</td><td><span class="tag p-high">高</span></td><td>96.0</td><td>1</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T008</td><td style="white-space:nowrap">2024-06-03 10:15</td><td>支付问题</td><td>付款成功但订单显示未支付</td><td><span class="tag p-high">高</span></td><td>3.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="商品咨询" data-priority="低" data-channel="在线" data-resolved="1"><td>T009</td><td style="white-space:nowrap">2024-06-03 13:45</td><td>商品咨询</td><td>这个包能不能装15寸的笔记本</td><td><span class="tag p-low">低</span></td><td>0.5</td><td>5</td><td>在线</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="投诉" data-priority="高" data-channel="电话" data-resolved="1"><td>T010</td><td style="white-space:nowrap">2024-06-03 16:20</td><td>投诉</td><td>客服态度很差 问了三遍都不回答</td><td><span class="tag p-high">高</span></td><td>24.0</td><td>1</td><td>电话</td><td class="ok">已解决</td></tr><tr data-category="退款退货" data-priority="中" data-channel="在线" data-resolved="1"><td>T011</td><td style="white-space:nowrap">2024-06-04 08:30</td><td>退款退货</td><td>质量问题退货运费应该你们出吧</td><td><span class="tag p-mid">中</span></td><td>12.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="电话" data-resolved="1"><td>T012</td><td style="white-space:nowrap">2024-06-04 09:45</td><td>支付问题</td><td>微信支付扣了两次钱 订单只有一个</td><td><span class="tag p-high">高</span></td><td>6.0</td><td>2</td><td>电话</td><td class="ok">已解决</td></tr><tr data-category="物流查询" data-priority="中" data-channel="在线" data-resolved="1"><td>T013</td><td style="white-space:nowrap">2024-06-04 11:30</td><td>物流查询</td><td>下单五天了还没发货</td><td><span class="tag p-mid">中</span></td><td>8.0</td><td>2</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="退款退货" data-priority="中" data-channel="在线" data-resolved="1"><td>T014</td><td style="white-space:nowrap">2024-06-04 14:00</td><td>退款退货</td><td>退款退到哪个账户了怎么查</td><td><span class="tag p-mid">中</span></td><td>2.0</td><td>4</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="商品咨询" data-priority="低" data-channel="在线" data-resolved="1"><td>T015</td><td style="white-space:nowrap">2024-06-04 16:45</td><td>商品咨询</td><td>这个充电器能不能给iPad用</td><td><span class="tag p-low">低</span></td><td>1.0</td><td>4</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T016</td><td style="white-space:nowrap">2024-06-05 09:10</td><td>支付问题</td><td>用花呗支付提示失败 但余额够啊</td><td><span class="tag p-high">高</span></td><td>4.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="退款退货" data-priority="中" data-channel="电话" data-resolved="1"><td>T017</td><td style="white-space:nowrap">2024-06-05 10:30</td><td>退款退货</td><td>我要换尺码 不是退货 是换货</td><td><span class="tag p-mid">中</span></td><td>24.0</td><td>3</td><td>电话</td><td class="ok">已解决</td></tr><tr data-category="账号问题" data-priority="中" data-channel="在线" data-resolved="1"><td>T018</td><td style="white-space:nowrap">2024-06-05 13:15</td><td>账号问题</td><td>手机号换了 怎么改绑定的手机号</td><td><span class="tag p-mid">中</span></td><td>2.0</td><td>4</td><td>在线</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="物流查询" data-priority="高" data-channel="电话" data-resolved="0"><td>T019</td><td style="white-space:nowrap">2024-06-05 15:45</td><td>物流查询</td><td>包裹被退回了 我没让退啊</td><td><span class="tag p-high">高</span></td><td>36.0</td><td>1</td><td>电话</td><td class="bad">未解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T020</td><td style="white-space:nowrap">2024-06-06 08:20</td><td>支付问题</td><td>信用卡支付成功了但订单没生成</td><td><span class="tag p-high">高</span></td><td>5.0</td><td>2</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="退款退货" data-priority="低" data-channel="在线" data-resolved="1"><td>T021</td><td style="white-space:nowrap">2024-06-06 09:50</td><td>退款退货</td><td>退货运费太贵了 能不能便宜点</td><td><span class="tag p-low">低</span></td><td>4.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="电话" data-resolved="1"><td>T022</td><td style="white-space:nowrap">2024-06-06 11:30</td><td>支付问题</td><td>重复扣款 请帮我退回来</td><td><span class="tag p-high">高</span></td><td>8.0</td><td>2</td><td>电话</td><td class="ok">已解决</td></tr><tr data-category="商品咨询" data-priority="低" data-channel="在线" data-resolved="1"><td>T023</td><td style="white-space:nowrap">2024-06-06 14:15</td><td>商品咨询</td><td>这个和那个套装有什么区别</td><td><span class="tag p-low">低</span></td><td>1.0</td><td>4</td><td>在线</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="投诉" data-priority="高" data-channel="在线" data-resolved="1"><td>T024</td><td style="white-space:nowrap">2024-06-06 16:00</td><td>投诉</td><td>收到的商品是破损的 你们不检查就发货吗</td><td><span class="tag p-high">高</span></td><td>48.0</td><td>1</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T025</td><td style="white-space:nowrap">2024-06-07 09:00</td><td>支付问题</td><td>付款页面一直转圈 付不了款</td><td><span class="tag p-high">高</span></td><td>1.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="退款退货" data-priority="中" data-channel="在线" data-resolved="1"><td>T026</td><td style="white-space:nowrap">2024-06-07 10:20</td><td>退款退货</td><td>我要退款 客服机器人一直让我重新描述问题</td><td><span class="tag p-mid">中</span></td><td>6.0</td><td>2</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="物流查询" data-priority="高" data-channel="电话" data-resolved="1"><td>T027</td><td style="white-space:nowrap">2024-06-07 12:45</td><td>物流查询</td><td>快递信息已经4天没更新了</td><td><span class="tag p-high">高</span></td><td>24.0</td><td>2</td><td>电话</td><td class="ok">已解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T028</td><td style="white-space:nowrap">2024-06-07 14:30</td><td>支付问题</td><td>用支付宝付的钱 显示扣款成功 但订单还是待支付</td><td><span class="tag p-high">高</span></td><td>3.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="账号问题" data-priority="高" data-channel="电话" data-resolved="1"><td>T029</td><td style="white-space:nowrap">2024-06-07 16:15</td><td>账号问题</td><td>账号突然被冻结了 我什么都没做</td><td><span class="tag p-high">高</span></td><td>12.0</td><td>3</td><td>电话</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T030</td><td style="white-space:nowrap">2024-06-08 08:45</td><td>支付问题</td><td>下了两个订单 只想付一个 结果两个都扣钱了</td><td><span class="tag p-high">高</span></td><td>6.0</td><td>1</td><td>在线</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="退款退货" data-priority="高" data-channel="电话" data-resolved="0"><td>T031</td><td style="white-space:nowrap">2024-06-08 10:00</td><td>退款退货</td><td>退货快递费我垫付了 说好了退给我 到现在没退</td><td><span class="tag p-high">高</span></td><td>120.0</td><td>1</td><td>电话</td><td class="bad">未解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T032</td><td style="white-space:nowrap">2024-06-08 11:30</td><td>支付问题</td><td>银行卡已经扣款了但订单没成功</td><td><span class="tag p-high">高</span></td><td>4.0</td><td>2</td><td>在线</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="物流查询" data-priority="中" data-channel="在线" data-resolved="0"><td>T033</td><td style="white-space:nowrap">2024-06-08 13:45</td><td>物流查询</td><td>快递显示异常 联系快递员也不接电话</td><td><span class="tag p-mid">中</span></td><td>48.0</td><td>2</td><td>在线</td><td class="bad">未解决</td></tr><tr class="anomaly" data-category="投诉" data-priority="高" data-channel="在线" data-resolved="1"><td>T034</td><td style="white-space:nowrap">2024-06-08 15:20</td><td>投诉</td><td>等了40分钟才有客服接 你们人手不够就别开在线客服</td><td><span class="tag p-high">高</span></td><td>12.0</td><td>1</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="电话" data-resolved="1"><td>T035</td><td style="white-space:nowrap">2024-06-09 09:30</td><td>支付问题</td><td>系统显示支付成功 但仓库说没收到订单 发不了货</td><td><span class="tag p-high">高</span></td><td>8.0</td><td>2</td><td>电话</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="退款退货" data-priority="高" data-channel="在线" data-resolved="0"><td>T036</td><td style="white-space:nowrap">2024-06-09 10:45</td><td>退款退货</td><td>七天无理由退货 你们不给退 凭什么</td><td><span class="tag p-high">高</span></td><td>24.0</td><td>1</td><td>在线</td><td class="bad">未解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T037</td><td style="white-space:nowrap">2024-06-09 12:15</td><td>支付问题</td><td>用花呗分了3期 但扣款金额不对</td><td><span class="tag p-high">高</span></td><td>6.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="商品咨询" data-priority="低" data-channel="在线" data-resolved="1"><td>T038</td><td style="white-space:nowrap">2024-06-09 14:00</td><td>商品咨询</td><td>这个T恤洗了会缩水吗</td><td><span class="tag p-low">低</span></td><td>1.0</td><td>4</td><td>在线</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="退款退货" data-priority="高" data-channel="电话" data-resolved="0"><td>T039</td><td style="white-space:nowrap">2024-06-09 15:45</td><td>退款退货</td><td>商品还没收到就已经自动确认收货了 我要退款</td><td><span class="tag p-high">高</span></td><td>36.0</td><td>1</td><td>电话</td><td class="bad">未解决</td></tr><tr data-category="支付问题" data-priority="中" data-channel="在线" data-resolved="1"><td>T040</td><td style="white-space:nowrap">2024-06-10 08:30</td><td>支付问题</td><td>优惠券用了但付款时没减 怎么回事</td><td><span class="tag p-mid">中</span></td><td>3.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="支付问题" data-priority="高" data-channel="电话" data-resolved="1"><td>T041</td><td style="white-space:nowrap">2024-06-10 09:45</td><td>支付问题</td><td>微信扣了钱但订单取消了 钱什么时候退</td><td><span class="tag p-high">高</span></td><td>12.0</td><td>2</td><td>电话</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="退款退货" data-priority="高" data-channel="在线" data-resolved="0"><td>T042</td><td style="white-space:nowrap">2024-06-10 11:20</td><td>退款退货</td><td>退货运费垫付了28块 你们说要报销的 什么时候给</td><td><span class="tag p-high">高</span></td><td>72.0</td><td>1</td><td>在线</td><td class="bad">未解决</td></tr><tr data-category="物流查询" data-priority="中" data-channel="在线" data-resolved="1"><td>T043</td><td style="white-space:nowrap">2024-06-10 13:00</td><td>物流查询</td><td>显示正在派送 从早上8点到现在5点了还没到</td><td><span class="tag p-mid">中</span></td><td>4.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="投诉" data-priority="中" data-channel="在线" data-resolved="1"><td>T044</td><td style="white-space:nowrap">2024-06-10 14:30</td><td>投诉</td><td>机器人一直回复同样的话 根本解决不了问题 浪费我时间</td><td><span class="tag p-mid">中</span></td><td>8.0</td><td>1</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="账号问题" data-priority="高" data-channel="电话" data-resolved="1"><td>T045</td><td style="white-space:nowrap">2024-06-10 16:00</td><td>账号问题</td><td>别人用我的账号下了一单 不是我操作的</td><td><span class="tag p-high">高</span></td><td>4.0</td><td>3</td><td>电话</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="0"><td>T046</td><td style="white-space:nowrap">2024-06-11 09:15</td><td>支付问题</td><td>又出现重复扣款了 上个月也有过</td><td><span class="tag p-high">高</span></td><td>6.0</td><td>1</td><td>在线</td><td class="bad">未解决</td></tr><tr class="anomaly" data-category="退款退货" data-priority="高" data-channel="电话" data-resolved="0"><td>T047</td><td style="white-space:nowrap">2024-06-11 10:30</td><td>退款退货</td><td>退了一个星期了 退款还在处理中 你们是不是不想退</td><td><span class="tag p-high">高</span></td><td>96.0</td><td>1</td><td>电话</td><td class="bad">未解决</td></tr><tr data-category="支付问题" data-priority="中" data-channel="在线" data-resolved="1"><td>T048</td><td style="white-space:nowrap">2024-06-11 12:00</td><td>支付问题</td><td>结算页面打不开 刷新了好几次</td><td><span class="tag p-mid">中</span></td><td>1.0</td><td>3</td><td>在线</td><td class="ok">已解决</td></tr><tr data-category="物流查询" data-priority="高" data-channel="电话" data-resolved="1"><td>T049</td><td style="white-space:nowrap">2024-06-11 14:20</td><td>物流查询</td><td>改了收货地址 但快递还是往旧地址送</td><td><span class="tag p-high">高</span></td><td>24.0</td><td>2</td><td>电话</td><td class="ok">已解决</td></tr><tr class="anomaly" data-category="支付问题" data-priority="高" data-channel="在线" data-resolved="1"><td>T050</td><td style="white-space:nowrap">2024-06-11 15:45</td><td>支付问题</td><td>订单金额是199 扣了我299 多扣了100块</td><td><span class="tag p-high">高</span></td><td>8.0</td><td>1</td><td>在线</td><td class="ok">已解决</td></tr>    </tbody>
+  </table>
+  </div>
+  <div class="sub" style="margin-top:16px">生成时间:自动 · 异常工单以红色高亮</div>
+</div>
+
+<script>
+function applyFilter(){
+  const cat=document.getElementById('f-cat').value;
+  const pri=document.getElementById('f-pri').value;
+  const chn=document.getElementById('f-chn').value;
+  const res=document.getElementById('f-res').value;
+  document.querySelectorAll('#ticket-table tbody tr').forEach(tr=>{
+    const ok=(cat==='all'||tr.dataset.category===cat)&&
+             (pri==='all'||tr.dataset.priority===pri)&&
+             (chn==='all'||tr.dataset.channel===chn)&&
+             (res==='all'||tr.dataset.resolved===res);
+    tr.style.display=ok?'':'none';
+  });
+}
+</script>
+<script>
+const charts=[];
+function mount(id,option){ const el=document.getElementById(id); const c=echarts.init(el); c.setOption(option); charts.push(c); }
+window.addEventListener('resize',()=>charts.forEach(c=>c.resize()));
+
+mount('chart_trend',{
+  tooltip:{trigger:'axis'},
+  legend:{data:['工单总量','未解决']},
+  grid:{left:40,right:20,top:40,bottom:30},
+  xAxis:{type:'category',data:["2024-06-01","2024-06-02","2024-06-03","2024-06-04","2024-06-05","2024-06-06","2024-06-07","2024-06-08","2024-06-09","2024-06-10","2024-06-11"]},
+  yAxis:{type:'value'},
+  series:[
+    {name:'工单总量',type:'bar',data:[3,3,4,5,4,5,5,5,5,6,5],itemStyle:{color:'#409EFF'},barWidth:'50%'},
+    {name:'未解决',type:'line',data:[0,0,0,0,1,0,0,2,2,1,2],itemStyle:{color:'#F56C6C'},smooth:true}
+  ]
+});
+
+mount('chart_category',{
+  tooltip:{trigger:'item',formatter:'{b}: {c} 条 ({d}%)'},
+  legend:{bottom:0},
+  series:[{type:'pie',radius:['42%','68%'],center:['50%','44%'],
+    itemStyle:{borderRadius:6,borderColor:'#fff',borderWidth:2},
+    label:{formatter:'{b}\n{c}条'},
+    data:[{"name":"支付问题","value":16},{"name":"退款退货","value":13},{"name":"物流查询","value":8},{"name":"商品咨询","value":5},{"name":"投诉","value":4},{"name":"账号问题","value":4}]}]
+});
+
+mount('chart_priority',{
+  tooltip:{trigger:'axis'},
+  legend:{data:['工单量','平均满意度']},
+  grid:{left:40,right:50,top:40,bottom:30},
+  xAxis:{type:'category',data:["高","中","低"]},
+  yAxis:[{type:'value',name:'工单量'},{type:'value',name:'平均满意度',min:1,max:5}],
+  series:[
+    {name:'工单量',type:'bar',data:[31,13,6],itemStyle:{color:'#409EFF'},barWidth:'45%'},
+    {name:'平均满意度',type:'line',yAxisIndex:1,data:[1.87,2.77,4.0],itemStyle:{color:'#E6A23C'},smooth:true}
+  ]
+});
+
+mount('chart_boxplot',{
+  tooltip:{trigger:'item',formatter:function(p){return p.name+'<br>最短:'+p.value[0]+'h · Q1:'+p.value[1]+'h · 中位:'+p.value[2]+'h · Q3:'+p.value[3]+'h · 最长:'+p.value[4]+'h';}},
+  grid:{left:50,right:20,top:30,bottom:40},
+  xAxis:{type:'category',data:["支付问题","退款退货","物流查询","商品咨询","投诉","账号问题"],axisLabel:{interval:0,rotate:20}},
+  yAxis:{type:'value',name:'处理时长(小时)'},
+  series:[{type:'boxplot',data:[[1.0,3.0,5.5,6.5,12.0],[2.0,12.0,24.0,72.0,120.0],[4.0,7.0,24.0,39.0,48.0],[0.5,1.0,1.0,1.0,1.0],[8.0,11.0,18.0,30.0,48.0],[2.0,2.0,3.0,6.0,12.0]],itemStyle:{color:'#909399',borderColor:'#606266'}}]
+});
+
+mount('chart_satisfaction',{
+  tooltip:{trigger:'axis'},
+  grid:{left:40,right:20,top:30,bottom:30},
+  xAxis:{type:'category',data:["1分","2分","3分","4分","5分"]},
+  yAxis:{type:'value',name:'工单量'},
+  series:[{type:'bar',data:[14,13,15,7,1],itemStyle:{color:'#E6A23C'},barWidth:'55%'}]
+});
+
+mount('chart_channel',{
+  tooltip:{trigger:'axis'},
+  legend:{data:['工单量','平均满意度']},
+  grid:{left:40,right:50,top:40,bottom:30},
+  xAxis:{type:'category',data:["在线","电话"]},
+  yAxis:[{type:'value',name:'工单量'},{type:'value',name:'平均满意度',min:1,max:5}],
+  series:[
+    {name:'工单量',type:'bar',data:[34,16],itemStyle:{color:'#67C23A'},barWidth:'45%'},
+    {name:'平均满意度',type:'line',yAxisIndex:1,data:[2.56,1.94],itemStyle:{color:'#E6A23C'},smooth:true}
+  ]
+});
+
+mount('chart_scatter',{
+  tooltip:{trigger:'item',formatter:function(p){return '处理时长:'+p.value[0]+'h · 满意度:'+p.value[1]+'分';}},
+  grid:{left:50,right:30,top:40,bottom:40},
+  xAxis:{type:'value',name:'处理时长(小时)'},
+  yAxis:{type:'value',name:'满意度',min:0,max:5.5},
+  series:[{type:'scatter',data:[[72.0,2],[4.0,3],[1.0,4],[24.0,3],[2.0,4],[48.0,2],[96.0,1],[3.0,3],[0.5,5],[24.0,1],[12.0,3],[6.0,2],[8.0,2],[2.0,4],[1.0,4],[4.0,3],[24.0,3],[2.0,4],[36.0,1],[5.0,2],[4.0,3],[8.0,2],[1.0,4],[48.0,1],[1.0,3],[6.0,2],[24.0,2],[3.0,3],[12.0,3],[6.0,1],[120.0,1],[4.0,2],[48.0,2],[12.0,1],[8.0,2],[24.0,1],[6.0,3],[1.0,4],[36.0,1],[3.0,3],[12.0,2],[72.0,1],[4.0,3],[8.0,1],[4.0,3],[6.0,1],[96.0,1],[1.0,3],[24.0,2],[8.0,1]],itemStyle:{color:'#909399',opacity:.6},symbolSize:10}]
+});
+</script>
+</body>
+</html>
